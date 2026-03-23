@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clasificador de Gastos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="logo-wrap">
+        <img src="img/graficologo.png" class="logo" alt="logo">
+        <div class="logo-glow"></div>
+      </div>
+      <h1 class="title">Clasificador<br><span class="accent">de Gastos</span></h1>
+      <p class="subtitle">Sube tu CSV y la IA clasifica cada gasto automáticamente</p>
+
+      <div class="upload-zone" id="upload-zone">
+        <input hidden type="file" id="adjuntar" accept=".csv">
+        <label for="adjuntar" class="upload-label">
+          <span class="upload-icon">↑</span>
+          <span class="upload-text">Seleccionar archivo CSV</span>
+        </label>
+        <span id="nombre-archivo" class="file-status">Sin archivo seleccionado</span>
+        <div class="progress-bar" id="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
+
+      <div class="stats-row" id="stats-row">
+        <div class="stat-card">
+          <span class="stat-label">Total gastos</span>
+          <span class="stat-value" id="stat-total">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Monto total</span>
+          <span class="stat-value" id="stat-monto">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Categorías</span>
+          <span class="stat-value" id="stat-cats">—</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="table-header">
+      <h2 class="section-title">Historial de Gastos</h2>
+      <div class="tag" id="tag-count"></div>
+    </div>
+
+    <div class="table-wrap">
+      <table id="tabla-gastos">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Descripción</th>
+            <th>Monto</th>
+            <th>Categoría</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpo-tabla">
+          <tr class="empty-row">
+            <td colspan="4">Sube un CSV para ver tus gastos</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
