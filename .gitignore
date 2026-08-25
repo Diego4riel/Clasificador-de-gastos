@@ -1,0 +1,5 @@
+src/db/gastos.db
+node_modules/
+.env
+uploads/*
+!uploads/.gitkeep
