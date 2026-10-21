@@ -1,15 +1,25 @@
 const multer = require('multer');
-const path = require('path');
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/');
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname));
+// Vercel limita el cuerpo de las peticiones a ~4.5 MB.
+const MAX_FILE_SIZE = 4 * 1024 * 1024;
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_FILE_SIZE,
+    files: 1,
+  },
+  fileFilter: (req, file, cb) => {
+    const esCsv = file.mimetype === 'text/csv' || /\.csv$/i.test(file.originalname);
+
+    if (!esCsv) {
+      const error = new Error('Solo se permiten archivos CSV.');
+      error.status = 400;
+      return cb(error);
     }
-});
 
-const upload = multer({ storage });
+    cb(null, true);
+  },
+});
 
 module.exports = upload;
