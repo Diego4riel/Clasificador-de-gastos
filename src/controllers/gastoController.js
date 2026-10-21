@@ -9,18 +9,22 @@ const crearGasto = (req, res) => {
   res.send("crear gasto");
 };
 
-const obtenerGastos = (req, res) => {
-  Gasto.obtenerTodos((err, gastos) => {
-    if (err) return res.status(500).json({ error: err.message });
+const obtenerGastos = async (req, res) => {
+  try {
+    const gastos = await Gasto.obtenerTodos(req.sessionId ?? null);
     res.json(gastos);
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
-const borrarGastos = (req, res) => {
-  Gasto.borrarTodos((err) => {
-    if (err) return res.status(500).json({ error: err.message });
+const borrarGastos = async (req, res) => {
+  try {
+    await Gasto.borrarTodos(req.sessionId ?? null);
     res.json({ mensaje: "Historial de gastos borrado" });
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 const subirCSV = async (req, res) => {
@@ -95,9 +99,7 @@ const subirCSV = async (req, res) => {
               };
 
               try {
-                await new Promise((resolve, reject) => {
-                  Gasto.crear(gasto, (err) => (err ? reject(err) : resolve()));
-                });
+                await Gasto.crear(gasto, req.sessionId ?? null);
               } catch (err) {
                 errores++;
               }

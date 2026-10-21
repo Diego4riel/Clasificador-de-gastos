@@ -1,38 +1,103 @@
-const db = require("../db/database");
+const { db, init } = require('../db/database');
+
+// Turso solo acepta string, number, bigint, boolean, Buffer/Uint8Array/ArrayBuffer y null.
+// Convertimos undefined a null para evitar "Unsupported type of value".
+function aValorSql(valor) {
+  if (valor === undefined || valor === null) return null;
+
+  if (typeof valor === 'number') {
+    return Number.isFinite(valor) ? valor : null;
+  }
+
+  if (
+    typeof valor === 'string' ||
+    typeof valor === 'bigint' ||
+    typeof valor === 'boolean'
+  ) {
+    return valor;
+  }
+
+  if (
+    Buffer.isBuffer(valor) ||
+    valor instanceof Uint8Array ||
+    valor instanceof ArrayBuffer
+  ) {
+    return valor;
+  }
+
+  throw new TypeError(
+    `Tipo de argumento no soportado por Turso: ${typeof valor}`
+  );
+}
+
+const aArgsSql = (args) => args.map(aValorSql);
 
 class Gasto {
+  // Inserta varios gastos en una sola transacción (un solo viaje a la red).
+  static async crearVarios(gastos, sessionId) {
+    await init();
+    if (!gastos.length) return;
 
-  static crear(gasto, callback) {
-    const { fecha, descripcion, monto, categoria } = gasto;
+    const now = Date.now();
+    await db.batch(
+      gastos.map((gasto = {}) => {
+        const { fecha, descripcion, monto, categoria } = gasto;
+        return {
+          sql: `INSERT INTO gastos (session_id, fecha, descripcion, monto, categoria, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)`,
+          args: aArgsSql([sessionId, fecha, descripcion, monto, categoria, now]),
+        };
+      }),
+      'write'
+    );
+  }
 
-    const query = `
-      INSERT INTO gastos (fecha, descripcion, monto, categoria)
-      VALUES (?, ?, ?, ?)
-    `;
+  static async crear(gasto, sessionId) {
+    await init();
+    const { fecha, descripcion, monto, categoria } = gasto ?? {};
+    const res = await db.execute({
+      sql: `INSERT INTO gastos (session_id, fecha, descripcion, monto, categoria, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)`,
+      args: aArgsSql([
+        sessionId,
+        fecha,
+        descripcion,
+        monto,
+        categoria,
+        Date.now(),
+      ]),
+    });
+    return Number(res.lastInsertRowid);
+  }
 
-    db.run(query, [fecha, descripcion, monto, categoria], function(err) {
-      callback(err, this?.lastID);
+  // Solo los gastos de esta sesión.
+  static async obtenerTodos(sessionId) {
+    await init();
+    const res = await db.execute({
+      sql: `SELECT id, fecha, descripcion, monto, categoria
+            FROM gastos WHERE session_id = ? ORDER BY id`,
+      args: aArgsSql([sessionId]),
+    });
+    return res.rows;
+  }
+
+  static async borrarTodos(sessionId) {
+    await init();
+    await db.execute({
+      sql: `DELETE FROM gastos WHERE session_id = ?`,
+      args: aArgsSql([sessionId]),
     });
   }
 
-  static obtenerTodos(callback) {
-    const query = `SELECT * FROM gastos`;
-
-    db.all(query, [], (err, rows) => {
-      callback(err, rows);
+  // Borra datos con más de `horas` horas, de cualquier sesión.
+  static async limpiarAntiguos(horas = 24) {
+    await init();
+    const limite = Date.now() - horas * 60 * 60 * 1000;
+    await db.execute({
+      sql: `DELETE FROM gastos WHERE created_at < ?`,
+      args: aArgsSql([limite]),
     });
   }
-
-  static borrarTodos(callback) {
-    db.run(`DELETE FROM gastos`, [], (err) => {
-      if (err) return callback(err);
-      // Reinicia el contador autoincremental para que el próximo gasto empiece en ID 1
-      db.run(`DELETE FROM sqlite_sequence WHERE name = 'gastos'`, [], (err2) => {
-        callback(err2);
-      });
-    });
-  }
-
 }
 
 module.exports = Gasto;
