@@ -10,6 +10,41 @@ const statCats = document.getElementById("stat-cats");
 const btnBorrar = document.getElementById("btn-borrar");
 const btnDescargar = document.getElementById("btn-descargar");
 
+const SESSION_KEY = "clasificador-gastos-session";
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const crearSessionId = () => {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+};
+
+const obtenerSessionId = () => {
+  const guardado = localStorage.getItem(SESSION_KEY);
+  if (guardado && UUID_RE.test(guardado)) return guardado;
+
+  const id = crearSessionId();
+  localStorage.setItem(SESSION_KEY, id);
+  return id;
+};
+
+const sessionId = obtenerSessionId();
+
+const apiFetch = (url, opciones = {}) =>
+  fetch(url, {
+    ...opciones,
+    headers: {
+      ...(opciones.headers || {}),
+      "x-session-id": sessionId,
+    },
+  });
+
 let gastosActuales = [];
 
 const catClass = (cat) => {
@@ -38,7 +73,7 @@ const actualizarStats = (gastos) => {
 };
 
 const cargarGastos = async () => {
-  const res = await fetch("/api/gastos");
+  const res = await apiFetch("/api/gastos");
   const gastos = await res.json();
   gastosActuales = gastos;
   btnDescargar.disabled = gastos.length === 0;
@@ -92,7 +127,7 @@ inputArchivo.addEventListener("change", async () => {
   formData.append("archivo", archivo);
 
   try {
-    const res = await fetch("/api/gastos/upload", {
+    const res = await apiFetch("/api/gastos/upload", {
       method: "POST",
       body: formData,
     });
@@ -142,7 +177,7 @@ btnBorrar.addEventListener("click", async () => {
   btnBorrar.textContent = "Borrando...";
 
   try {
-    const res = await fetch("/api/gastos", { method: "DELETE" });
+    const res = await apiFetch("/api/gastos", { method: "DELETE" });
     if (!res.ok) throw new Error("No se pudo borrar el historial");
     await cargarGastos();
   } catch (err) {
