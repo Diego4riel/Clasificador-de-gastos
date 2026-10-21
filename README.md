@@ -24,7 +24,7 @@ Sube un CSV con tus gastos y deja que la inteligencia artificial los categorice 
 | Base de datos     | SQLite3                                                          |
 | Carga de archivos | Multer                                                           |
 | Parseo de CSV     | csv-parser                                                       |
-| Clasificación     | OpenRouter API (modelo `nvidia/nemotron-3-super-120b-a12b:free`) |
+| Clasificación     | OpenRouter API (modelo configurable, por defecto `meta-llama/llama-3.3-70b-instruct`) |
 | Frontend          | HTML + CSS + JS vanilla                                          |
 
 ## 📁 Estructura del proyecto
@@ -64,6 +64,8 @@ Crea un archivo `.env` en la raíz del proyecto:
 
 ```
 OPENROUTER_API_KEY=tu_clave_aqui
+# Opcional: cambia el modelo sin tocar el código
+OPENROUTER_MODEL=meta-llama/llama-3.3-70b-instruct
 ```
 
 > Consigue una clave gratuita en [openrouter.ai/keys](https://openrouter.ai/keys).
